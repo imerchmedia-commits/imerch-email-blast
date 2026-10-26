@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>iMerch Applicant Digital Email Blast Portal</title>
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Google Fonts (Inter) -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- SheetJS Library para sa Excel parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <style>
+    :root {
+      --primary-gradient: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+      --glass-bg: rgba(255, 255, 255, 0.75);
+      --glass-border: rgba(255, 255, 255, 0.6);
+      --glass-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.08), inset 0 1px 0 0 rgba(255, 255, 255, 0.9);
+      --card-3d-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.12);
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+      min-height: 100vh;
+      color: #334155;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Ambient background glowing blobs para sa 3D glass depth */
+    body::before, body::after {
+      content: '';
+      position: absolute;
+      width: 450px;
+      height: 450px;
+      border-radius: 50%;
+      z-index: -1;
+      filter: blur(80px);
+      opacity: 0.4;
+    }
+    body::before {
+      background: #3b82f6;
+      top: -100px;
+      left: -100px;
+    }
+    body::after {
+      background: #6366f1;
+      bottom: -100px;
+      right: -100px;
+    }
+
+    /* Glassmorphism & 3D Card Effects */
+    .glass-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      box-shadow: var(--card-3d-shadow);
+      transition: all 0.3s ease;
+    }
+
+    .glass-card:hover {
+      box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.18);
+      transform: translateY(-2px);
+    }
+
+    /* Header Styling */
+    .portal-header {
+      background: var(--primary-gradient);
+      color: white;
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 15px 35px -5px rgba(15, 23, 42, 0.2);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .portal-header::after {
+      content: '';
+      position: absolute;
+      top: 0; right: 0; bottom: 0; left: 0;
+      background: linear-gradient(45deg, rgba(255,255,255,0.05) 0%, transparent 100%);
+      pointer-events: none;
+    }
+
+    /* Custom Navigation Tabs */
+    .nav-tabs {
+      border-bottom: none;
+      gap: 10px;
+    }
+
+    .nav-tabs .nav-link {
+      background: rgba(255, 255, 255, 0.5);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      border-radius: 10px;
+      color: #64748b;
+      font-weight: 600;
+      padding: 10px 20px;
+      transition: all 0.2s ease-in-out;
+      backdrop-filter: blur(8px);
+    }
+
+    .nav-tabs .nav-link:hover {
+      background: rgba(255, 255, 255, 0.8);
+      color: #1e3a8a;
+      border-color: #cbd5e1;
+    }
+
+    .nav-tabs .nav-link.active {
+      background: #1e3a8a;
+      color: white;
+      border-color: #1e3a8a;
+      box-shadow: 0 8px 20px -4px rgba(30, 58, 138, 0.4);
+    }
+
+    /* Form Controls & Textarea Glass Look */
+    .form-control, .form-select {
+      background: rgba(255, 255, 255, 0.8);
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 0.95rem;
+      transition: all 0.2s;
+    }
+
+    .form-control:focus, .form-select:focus {
+      background: #ffffff;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+    }
+
+    /* 3D Modern Button */
+    .btn-3d-primary {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      border: none;
+      border-radius: 10px;
+      color: white;
+      font-weight: 600;
+      padding: 12px 24px;
+      box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.5);
+      transition: all 0.2s ease;
+    }
+
+    .btn-3d-primary:hover:not(:disabled) {
+      background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+      box-shadow: 0 14px 24px -4px rgba(37, 99, 235, 0.6);
+      transform: translateY(-2px);
+      color: white;
+    }
+
+    .btn-3d-primary:active:not(:disabled) {
+      transform: translateY(0);
+      box-shadow: 0 6px 12px -4px rgba(37, 99, 235, 0.5);
+    }
+
+    .btn-3d-primary:disabled {
+      background: #94a3b8;
+      box-shadow: none;
+      opacity: 0.7;
+    }
+
+    /* Table styling inside glass container */
+    .table-container {
+      background: rgba(255, 255, 255, 0.6);
+      border-radius: 12px;
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      overflow: hidden;
+    }
+
+    .table {
+      margin-bottom: 0;
+    }
+
+    .table th {
+      background: rgba(241, 245, 249, 0.8);
+      color: #475569;
+      font-weight: 600;
+      border-bottom: 2px solid #e2e8f0;
+      padding: 12px 16px;
+    }
+
+    .table td {
+      padding: 12px 16px;
+      vertical-align: middle;
+      color: #334155;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container py-5">
+    
+    <!-- Header Section -->
+    <div class="portal-header mb-4">
+      <div class="row align-items-center">
+        <div class="col-md-8">
+          <h2 class="fw-bold m-0 mb-1">i-Merch Media Recruitment Portal</h2>
+          <p class="text-white-50 m-0">Secure Email Blast & Applicant Management System</p>
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+          <span class="badge bg-light text-dark px-3 py-2 rounded-pill fw-semibold shadow-sm">
+            📩 iMerch Digital Email Blast
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <ul class="nav nav-tabs mb-4" id="portalTab" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="imerch-digital-tab" data-bs-toggle="tab" data-bs-target="#imerch-digital" type="button" role="tab">Imerch Digital Email Blast</button>
+      </li>
+      <!-- Madaling madagdagan ng bagong tabs dito sa hinaharap -->
+    </ul>
+
+    <div class="tab-content" id="portalTabContent">
+      <!-- IMERCH DIGITAL EMAIL BLAST TAB CONTENT -->
+      <div class="tab-pane fade show active" id="imerch-digital" role="tabpanel">
+        <div class="row g-4">
+          
+          <!-- Left Column: Uploader & Trigger -->
+          <div class="col-lg-5">
+            <div class="glass-card p-4 mb-4">
+              <h5 class="fw-bold text-dark mb-3 pb-2 border-bottom">1. Import Applicant File</h5>
+              <div class="mb-3">
+                <label class="form-label fw-semibold text-secondary small">Upload Excel (.xlsx / .xls)</label>
+                <input type="file" id="excelFile" class="form-control" accept=".xlsx, .xls">
+                <div class="form-text mt-2 text-muted small">
+                  Automatic na babasahin ang columns na may pangalang <code>Email</code>, <code>Email Address</code>, o <code>Name</code>.
+                </div>
+              </div>
+
+              <button class="btn btn-3d-primary w-100 mt-2" id="btnSend" onclick="sendEmailBlast()" disabled>
+                🚀 Send Email Blast Now
+              </button>
+            </div>
+          </div>
+
+          <!-- Right Column: Editable Template & Table Summary -->
+          <div class="col-lg-7">
+            <!-- Editable Email Body Box -->
+            <div class="glass-card p-4 mb-4">
+              <h5 class="fw-bold text-dark mb-2 pb-2 border-bottom">2. Professional Email Template</h5>
+              <div class="text-muted small mb-2">
+                Maaari mong baguhin o i-porma ang text dito. Gamitin ang <code>{name}</code> para awtomatikong mapalitan ng pangalan ng bawat applicant mula sa Excel.
+              </div>
+              <textarea class="form-control font-monospace text-dark" id="emailBodyContent" rows="11" style="line-height: 1.6; font-size: 0.9rem;">Dear {name},
+
+Thanks for taking the time to apply. We appreciate your interest in i-Merch Media, Inc. We are inviting you to our Company & Job Briefing. 
+
+Our office is located at #493 Halcon St. Brgy. Malamig, Mandaluyong City. Kindly bring your updated resume and a black ballpen. For inquiries, you may contact our recruitment team at 0905 830 8615 and look for HR Bhevs or HR Karley.
+
+Thank you very much.</textarea>
+            </div>
+
+            <!-- Recipient List Table Preview -->
+            <div class="glass-card p-4">
+              <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                <h5 class="fw-bold text-dark m-0">Extracted Recipients List</h5>
+                <span class="badge bg-primary px-3 py-2 rounded-pill shadow-sm" id="recipientCount">0 Emails Found</span>
+              </div>
+              
+              <div class="table-container shadow-sm" style="max-height: 260px; overflow-y: auto;">
+                <table class="table table-hover align-middle">
+                  <thead class="sticky-top">
+                    <tr>
+                      <th width="10%">#</th>
+                      <th width="40%">Applicant Name</th>
+                      <th width="50%">Email Address</th>
+                    </tr>
+                  </thead>
+                  <tbody id="recipientTable">
+                    <tr>
+                      <td colspan="3" class="text-center text-muted py-4">Wala pang na-upload na Excel file. Piliin ang file sa kaliwa.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    // IPALIT ANG NAKOPYANG GOOGLE APPS SCRIPT WEB APP URL DITO
+    const APPS_SCRIPT_URL = "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE";
+
+    let extractedRecipients = [];
+
+    // Excel File Reader gamit ang SheetJS
+    document.getElementById('excelFile').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const data = new Uint8Array(evt.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+        extractedRecipients = jsonData.map(row => {
+          const email = row.Email || row.EMAIL || row['Email Address'] || row['email'] || row['EMAIL ADDRESS'];
+          const name = row.Name || row.NAME || row['Applicant Name'] || row['Full Name'] || row['name'] || 'Applicant';
+          return { name, email };
+        }).filter(item => item.email && item.email.includes('@'));
+
+        renderTable();
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    // Render table rows
+    function renderTable() {
+      const tbody = document.getElementById('recipientTable');
+      tbody.innerHTML = '';
+
+      if (extractedRecipients.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-danger py-4 fw-medium">Walang nahanap na valid Email column sa na-upload na file.</td></tr>';
+        document.getElementById('btnSend').disabled = true;
+        document.getElementById('recipientCount').innerText = `0 Emails Found`;
+        return;
+      }
+
+      extractedRecipients.forEach((item, idx) => {
+        tbody.innerHTML += `<tr>
+          <td class="text-muted fw-semibold">${idx + 1}</td>
+          <td class="fw-medium">${item.name}</td>
+          <td><code class="text-primary bg-light px-2 py-1 rounded">${item.email}</code></td>
+        </tr>`;
+      });
+
+      document.getElementById('recipientCount').innerText = `${extractedRecipients.length} Applicants Ready`;
+      document.getElementById('btnSend').disabled = false;
+    }
+
+    // Send function to Google Apps Script backend
+    async function sendEmailBlast() {
+      const customBodyTemplate = document.getElementById('emailBodyContent').value;
+
+      if (!customBodyTemplate.trim()) {
+        alert("Paki-lagyan ng laman ang email body template!");
+        return;
+      }
+
+      if (!confirm(`Sigurado ka bang gustong magpadala ng email blast sa ${extractedRecipients.length} na applicant?`)) return;
+
+      const btn = document.getElementById('btnSend');
+      btn.disabled = true;
+      btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span> Sending Emails...`;
+
+      const payload = {
+        customBody: customBodyTemplate,
+        recipients: extractedRecipients
+      };
+
+      try {
+        const response = await fetch(APPS_SCRIPT_URL, {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+
+        const res = await response.json();
+        if (res.status === "success") {
+          alert(`Success! ${res.message}`);
+        } else {
+          alert("May naganap na error: " + res.message);
+        }
+      } catch (err) {
+        alert("Hindi makakonekta sa Google Apps Script backend. Paki-check ang Web App URL o internet connection.");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `🚀 Send Email Blast Now`;
+      }
+    }
+  </script>
+</body>
+</html>
